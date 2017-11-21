@@ -12,7 +12,7 @@ class ResetCommand extends Command
      *
      * @var string
      */
-    protected $name = 'translations:reset {--database= : The database connection to use.}';
+    protected $signature = 'translations:reset {--database= : The database connection to use.}';
     
     /**
      * The console command description.
@@ -35,9 +35,9 @@ class ResetCommand extends Command
      */
     public function handle()
     {
+        $this->manager->setConnection($this->option('database'));
         $this->manager->truncateTranslations();
         
-        $this->manager->setConnection($this->option('database'));
         
         $this->info('All translations are deleted');
     }
