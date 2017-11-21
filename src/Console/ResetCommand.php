@@ -12,30 +12,33 @@ class ResetCommand extends Command
      *
      * @var string
      */
-    protected $name = 'translations:reset';
-
+    protected $name = 'translations:reset {--database= : The database connection to use.}';
+    
     /**
      * The console command description.
      *
      * @var string
      */
     protected $description = 'Delete all translations from the database';
-
+    
     /** @var \Barryvdh\TranslationManager\Manager */
     protected $manager;
-
+    
     public function __construct(Manager $manager)
     {
         $this->manager = $manager;
         parent::__construct();
     }
-
+    
     /**
      * Execute the console command.
      */
     public function handle()
     {
         $this->manager->truncateTranslations();
+        
+        $this->manager->setConnection($this->option('database'));
+        
         $this->info('All translations are deleted');
     }
 }

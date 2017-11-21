@@ -19,20 +19,33 @@ class Manager
     /** @var \Illuminate\Events\Dispatcher */
     protected $events;
     
+    // default connection to use for eloquent models
+    private $connection = null;
+    
     protected $config;
     
-    public function __construct(Application $app, Filesystem $files, Dispatcher $events)
+    public function __construct(Application $app, Filesystem $files, Dispatcher $events, $connection = null)
     {
-        $this->app    = $app;
-        $this->files  = $files;
-        $this->events = $events;
-        $this->config = $app['config']['translation-manager'];
+        $this->app        = $app;
+        $this->files      = $files;
+        $this->events     = $events;
+        $this->config     = $app['config']['translation-manager'];
+        $this->connection = $connection;
     }
+    
+    /**
+     * @param null $connection
+     */
+    public function setConnection($connection)
+    {
+        $this->connection = $connection;
+    }
+    
     
     public function missingKey($namespace, $group, $key)
     {
         if (!in_array($group, $this->config['exclude_groups'])) {
-            Translation::firstOrCreate([
+            Translation::on($this->connection)->firstOrCreate([
                 'locale' => $this->app['config']['app.locale'],
                 'group' => $group,
                 'key' => $key,
@@ -93,14 +106,14 @@ class Manager
             return false;
         }
         $value       = (string)$value;
-        $translation = Translation::firstOrNew([
+        $translation = Translation::on($this->connection)->firstOrNew([
             'locale' => $locale,
             'group' => $group,
             'key' => $key,
         ]);
         
         // Check if the database is different then the files
-        $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
+        $newStatus = $translation->value === $value ? Translation::on($this->connection)->STATUS_SAVED : Translation::on($this->connection)->STATUS_CHANGED;
         if ($newStatus !== (int)$translation->status) {
             $translation->status = $newStatus;
         }
@@ -208,7 +221,7 @@ class Manager
                     return $this->exportAllTranslations();
                 }
                 
-                $tree = $this->makeTree(Translation::ofTranslatedGroup($group)->orderByGroupKeys(array_get($this->config,
+                $tree = $this->makeTree(Translation::on($this->connection)->ofTranslatedGroup($group)->orderByGroupKeys(array_get($this->config,
                     'sort_keys', false))->get());
                 
                 foreach ($tree as $locale => $groups) {
@@ -219,12 +232,12 @@ class Manager
                         $this->files->put($path, $output);
                     }
                 }
-                Translation::ofTranslatedGroup($group)->update(['status' => Translation::STATUS_SAVED]);
+                Translation::on($this->connection)->ofTranslatedGroup($group)->update(['status' => Translation::on($this->connection)->STATUS_SAVED]);
             }
         }
         
         if ($json) {
-            $tree = $this->makeTree(Translation::ofTranslatedGroup(self::JSON_GROUP)->orderByGroupKeys(array_get($this->config,
+            $tree = $this->makeTree(Translation::on($this->connection)->ofTranslatedGroup(self::JSON_GROUP)->orderByGroupKeys(array_get($this->config,
                 'sort_keys', false))->get(), true);
             
             foreach ($tree as $locale => $groups) {
@@ -236,13 +249,13 @@ class Manager
                 }
             }
             
-            Translation::ofTranslatedGroup(self::JSON_GROUP)->update(['status' => Translation::STATUS_SAVED]);
+            Translation::on($this->connection)->ofTranslatedGroup(self::JSON_GROUP)->update(['status' => Translation::on($this->connection)->STATUS_SAVED]);
         }
     }
     
     public function exportAllTranslations()
     {
-        $groups = Translation::whereNotNull('value')->selectDistinctGroup()->get('group');
+        $groups = Translation::on($this->connection)->whereNotNull('value')->selectDistinctGroup()->get('group');
         
         foreach ($groups as $group) {
             if ($group == self::JSON_GROUP) {
@@ -255,12 +268,12 @@ class Manager
     
     public function cleanTranslations()
     {
-        Translation::whereNull('value')->delete();
+        Translation::on($this->connection)->whereNull('value')->delete();
     }
     
     public function truncateTranslations()
     {
-        Translation::truncate();
+        Translation::on($this->connection)->truncate();
     }
     
     protected function makeTree($translations, $json = false)
