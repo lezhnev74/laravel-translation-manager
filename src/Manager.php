@@ -113,7 +113,7 @@ class Manager
         ]);
         
         // Check if the database is different then the files
-        $newStatus = $translation->value === $value ? Translation::on($this->connection)->STATUS_SAVED : Translation::on($this->connection)->STATUS_CHANGED;
+        $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
         if ($newStatus !== (int)$translation->status) {
             $translation->status = $newStatus;
         }
@@ -232,7 +232,7 @@ class Manager
                         $this->files->put($path, $output);
                     }
                 }
-                Translation::on($this->connection)->ofTranslatedGroup($group)->update(['status' => Translation::on($this->connection)->STATUS_SAVED]);
+                Translation::on($this->connection)->ofTranslatedGroup($group)->update(['status' => Translation::STATUS_SAVED]);
             }
         }
         
@@ -249,7 +249,7 @@ class Manager
                 }
             }
             
-            Translation::on($this->connection)->ofTranslatedGroup(self::JSON_GROUP)->update(['status' => Translation::on($this->connection)->STATUS_SAVED]);
+            Translation::on($this->connection)->ofTranslatedGroup(self::JSON_GROUP)->update(['status' => Translation::STATUS_SAVED]);
         }
     }
     
